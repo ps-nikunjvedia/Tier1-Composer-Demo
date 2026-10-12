@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tier 1 Switches | Range Catalogue</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230B1621'/%3E%3Ctext x='32' y='45' font-family='Arial' font-weight='900' font-size='38' text-anchor='middle' fill='%238DD14F'%3E1%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;900&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; color: #1A2733; background: #F2F5F7; font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    input, select, button { font-family: inherit; }
+    button { transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease; }
+    button:focus-visible { outline: 2px solid #8DD14F; outline-offset: 2px; }
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #C6D0D8; border-radius: 3px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .layout { display: grid; grid-template-columns: 248px 1fr; gap: 24px; }
+    .hl-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .hl-grid > div + div { border-left: 1px solid #E1E7EC; }
+    .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(208px, 1fr)); gap: 14px; }
+    .range-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .range-btn:hover { background: rgba(255,255,255,0.06) !important; }
+    .pcard { transition: border-color .15s ease, box-shadow .15s ease; }
+    .pcard:hover { border-color: #C6D0D8 !important; box-shadow: 0 6px 18px -12px rgba(11,22,33,0.35); }
+    .rcard { transition: border-color .15s ease, box-shadow .15s ease; cursor: pointer; }
+    .rcard:hover { border-color: #C6D0D8 !important; box-shadow: 0 10px 24px -16px rgba(11,22,33,0.4); }
+    .rcard:hover .rcard-cta { color: #3F7A1C; }
+    .ghost:hover { background: rgba(255,255,255,0.08) !important; }
+    .primary:not(:disabled):hover { background: #9CDB62 !important; }
+    tbody tr:hover td { background: #F7F9FA; }
+    .fade { animation: fade .3s ease both; }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+    .pulse { animation: pulse 1.2s ease-in-out infinite; }
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { position: static !important; }
+      .side-list { display: flex !important; overflow-x: auto; gap: 6px; }
+      .side-list button { white-space: nowrap; width: auto !important; }
+      .hl-grid { grid-template-columns: 1fr; }
+      .hl-grid > div + div { border-left: none; border-top: 1px solid #E1E7EC; }
+      .hdr-sub, .hdr-count { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ─── Conga Globals ───
+    const CONGA_AUTH_URL    = "https://login-preview.congacloud.eu/api/v1/auth/connect/token";
+    const CONGA_CLIENT_ID   = "2840eba2-0101-4f29-ba08-86ae2fa76169";
+    const CONGA_CLIENT_SECRET = "XpJws98s!6sLY!$u4$g0i!$@O";
+    const CONGA_MERGE_URL     = "https://coreapps-preview.congacloud.eu/api/ingress/v1/Merge";
+    const CONGA_STATUS_URL    = "https://coreapps-preview.congacloud.eu/api/ingress/v1/status";
+    const CONGA_PRESIGNED_URL = "https://coreapps-preview.congacloud.eu/api/presigned/v1/PreSignedService";
+    const CONGA_TEMPLATE_FILE_ID = "af1eea4e-9e55-4616-afb4-ce6832d9773b";
+    const CONGA_DEST_FOLDER      = "My Files";
+
+    // ─── Tier 1 Switches Brand ───
+    const L = {
+      ink: "#0B1621", navy: "#1E3A52", navyMid: "#294A62", lime: "#8DD14F", limeDeep: "#3F7A1C", limeSoft: "#F2F8EC",
+      text: "#1A2733", textLight: "#6A7A88", bg: "#F2F5F7", white: "#fff", bgAlt: "#F7F9FA", border: "#E1E7EC", radius: "14px",
+    };
+    const hd = { fontFamily: "'Space Grotesk', sans-serif" };
+    const btnR = { padding: "12px 22px", background: L.lime, color: L.ink, border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: "pointer", ...hd };
+    const btnGhost = { ...btnR, background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.18)" };
+
+    const EUR = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
+    function fmt(a) { return EUR.format(a); }
+    function longDate(d) { return d.toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" }); }
+    const PRICE_VALIDITY_DAYS = 30;
+
+    // ─── Tier 1 logo lockup (recreated in HTML for crisp rendering) ───
+    function Tier1Logo({ size = 30, light = false, sub = "SYSTEMS" }) {
+      const navy = light ? "#fff" : L.navyMid;
+      const bar = { width: size * 0.17, height: size * 0.16, background: navy, borderRadius: 1 };
+      const w = { fontFamily: "'Montserrat', sans-serif", fontWeight: 900, fontSize: size, lineHeight: 1, color: navy, letterSpacing: "-0.02em" };
+      return (
+        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch", userSelect: "none" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: size * 0.05 }}>
+            <span style={w}>T</span>
+            <span style={{ display: "flex", flexDirection: "column", gap: size * 0.05, padding: `0 ${size * 0.03}px`, marginBottom: size * 0.09 }}>
+              <span style={{ ...bar, background: L.lime }} /><span style={bar} /><span style={bar} /><span style={bar} />
+            </span>
+            <span style={w}>ER</span>
+            <span style={{ ...w, color: L.lime }}>1</span>
+          </div>
+          <div style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: size * 0.36, color: L.lime, letterSpacing: "0.32em", marginTop: size * 0.1, textAlign: "center", paddingLeft: "0.32em" }}>{sub}</div>
+        </div>
+      );
+    }
+
+    // ─── Product illustration (used when no product photo is available) ───
+    function ProductArt({ name, accent }) {
+      const n = name.toLowerCase();
+      const line = "#C9D3DB";
+      const plate = <rect x="12" y="12" width="76" height="76" rx="12" fill="#fff" stroke={line} strokeWidth="1.2" />;
+      let inner;
+      if (n.includes("plate")) {
+        const m = parseInt(n) || 3; const cols = Math.min(m, 6);
+        inner = <g>{Array.from({ length: cols }).map((_, i) => <rect key={i} x={22 + i * (56 / cols)} y="36" width={56 / cols - 3} height="28" rx="2.5" fill="none" stroke={L.ink} strokeOpacity=".55" strokeWidth="1.2" />)}</g>;
+      } else if (n.includes("usb")) {
+        inner = <g><rect x="34" y="34" width="32" height="9" rx="2" fill={L.ink} /><rect x="39" y="55" width="22" height="8" rx="4" fill={L.ink} /><circle cx="50" cy="74" r="2" fill={accent} /></g>;
+      } else if (n.includes("rj45") || n.includes("data")) {
+        inner = <g><rect x="36" y="36" width="28" height="24" rx="2" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".6" /><rect x="44" y="56" width="12" height="6" fill="#fff" stroke={L.ink} strokeOpacity=".6" /><rect x="44" y="72" width="12" height="2" rx="1" fill={accent} /></g>;
+      } else if (n.includes("tv")) {
+        inner = <g><circle cx="50" cy="50" r="16" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".5" /><circle cx="50" cy="50" r="5" fill="#fff" stroke={L.ink} strokeOpacity=".7" /><circle cx="50" cy="50" r="1.5" fill={L.ink} /></g>;
+      } else if (n.includes("socket")) {
+        inner = <g><circle cx="50" cy="50" r="24" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".35" /><circle cx="41" cy="50" r="3.2" fill={L.ink} /><circle cx="59" cy="50" r="3.2" fill={L.ink} /><rect x="47" y="27" width="6" height="3" rx="1" fill={accent} /><rect x="47" y="70" width="6" height="3" rx="1" fill={accent} /></g>;
+      } else if (n.includes("dimmer") || n.includes("actuator")) {
+        inner = <g><circle cx="50" cy="50" r="20" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".35" /><circle cx="50" cy="50" r="13" fill="#fff" stroke={L.ink} strokeOpacity=".6" strokeWidth="1.2" /><rect x="49" y="38" width="2" height="8" rx="1" fill={accent} /></g>;
+      } else if (n.includes("thermostat") || n.includes("touch") || n.includes("timer")) {
+        inner = <g><rect x="26" y="28" width="48" height="34" rx="4" fill={L.ink} /><text x="50" y="51" textAnchor="middle" fontSize="13" fontWeight="600" fill={accent} fontFamily="Space Grotesk">{n.includes("timer") ? "07:30" : "21°"}</text><circle cx="50" cy="74" r="2.5" fill={L.ink} fillOpacity=".5" /></g>;
+      } else if (n.includes("blind")) {
+        inner = <g><rect x="30" y="24" width="40" height="52" rx="5" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".35" /><line x1="30" y1="50" x2="70" y2="50" stroke={L.ink} strokeOpacity=".35" /><path d="M44 41l6-6 6 6M44 59l6 6 6-6" fill="none" stroke={L.ink} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>;
+      } else if (n.includes("knx") || n.includes("bell") || n.includes("push")) {
+        inner = <g><rect x="28" y="28" width="44" height="44" rx="8" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".35" /><circle cx="50" cy="50" r="8" fill="none" stroke={L.ink} strokeOpacity=".7" strokeWidth="1.6" /><circle cx="50" cy="50" r="2.5" fill={accent} /></g>;
+      } else {
+        inner = <g><rect x="33" y="24" width="34" height="52" rx="5" fill={L.bgAlt} stroke={L.ink} strokeOpacity=".35" /><rect x="37" y="28" width="26" height="22" rx="3" fill="#fff" stroke={L.ink} strokeOpacity=".35" /><rect x="46" y="68" width="8" height="2.5" rx="1.25" fill={accent} /></g>;
+      }
+      return <svg viewBox="0 0 100 100" style={{ width: "62%", height: "62%" }} aria-hidden="true">{plate}{inner}</svg>;
+    }
+
+    // Product visuals are always drawn. No third-party product photography is displayed
+    function ProductImage({ p, accent }) {
+      return <ProductArt name={p.name} accent={accent} />;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  RANGE ILLUSTRATIONS: three SVGs per range, one per highlight.
+    //  Built as plain SVG strings so the same image is shown in the app and
+    //  sent to Conga as a base64 data URI (no image hosting needed).
+    // ═══════════════════════════════════════════════════════════════════
+    const INK = "#0B1621", EDGE = "#C9D3DB", FACE = "#F7F9FA", TXT = "font-family=\"Arial, Helvetica, sans-serif\"";
+
+    function svgDoc(inner) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="640" height="400"><rect width="320" height="200" fill="#EEF2F5"/>${inner}</svg>`;
+    }
+    function svgUri(svg) { return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg))); }
+
+    // One module of a switch plate, drawn inside the box x, y, w, h
+    function drawModule(type, x, y, w, h, a) {
+      const cx = x + w / 2, cy = y + h / 2;
+      if (type === "sk") return `<circle cx="${cx}" cy="${cy}" r="${w * 0.36}" fill="${FACE}" stroke="${EDGE}"/><circle cx="${cx - w * 0.13}" cy="${cy}" r="2.6" fill="${INK}"/><circle cx="${cx + w * 0.13}" cy="${cy}" r="2.6" fill="${INK}"/><rect x="${cx - 4}" y="${cy - w * 0.36 + 1}" width="8" height="3" rx="1" fill="${a}"/><rect x="${cx - 4}" y="${cy + w * 0.36 - 4}" width="8" height="3" rx="1" fill="${a}"/>`;
+      if (type === "usb") return `<rect x="${cx - 10}" y="${cy - 14}" width="20" height="6" rx="1.5" fill="${INK}"/><rect x="${cx - 8}" y="${cy + 4}" width="16" height="6" rx="3" fill="${INK}"/><circle cx="${cx}" cy="${y + h - 10}" r="1.8" fill="${a}"/>`;
+      if (type === "dim") return `<circle cx="${cx}" cy="${cy}" r="${w * 0.3}" fill="#fff" stroke="${EDGE}" stroke-width="1.5"/><rect x="${cx - 1}" y="${cy - w * 0.3 + 3}" width="2" height="8" rx="1" fill="${a}"/>`;
+      if (type === "round") return `<circle cx="${cx}" cy="${cy}" r="${w * 0.34}" fill="#fff" stroke="${EDGE}" stroke-width="1.2"/><rect x="${cx - 4}" y="${cy + w * 0.2}" width="8" height="2" rx="1" fill="${a}"/>`;
+      return `<rect x="${x + 5}" y="${y + 6}" width="${w - 10}" height="${h - 12}" rx="3" fill="#fff" stroke="${EDGE}"/><line x1="${x + 5}" y1="${cy}" x2="${x + w - 5}" y2="${cy}" stroke="${EDGE}"/><rect x="${cx - 4}" y="${y + h - 13}" width="8" height="2" rx="1" fill="${a}"/>`;
+    }
+    function plate(mods, a, o = {}) {
+      const mw = o.mw || 40, h = o.h || 104, pad = 12, w = mods.length * mw + pad * 2;
+      const x = (o.cx || 160) - w / 2, y = (o.cy || 100) - h / 2, fill = o.fill || "#fff";
+      return `<rect x="${x + 4}" y="${y + 5}" width="${w}" height="${h}" rx="${o.r ?? 12}" fill="#DCE3E9"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.r ?? 12}" fill="${fill}" stroke="${EDGE}"/>` +
+        mods.map((m, i) => drawModule(m, x + pad + i * mw, y + pad, mw, h - pad * 2, a)).join("");
+    }
+    function label(x, y, t, o = {}) { return `<text x="${x}" y="${y}" ${TXT} font-size="${o.size || 9}" font-weight="${o.bold ? 700 : 400}" fill="${o.color || "#5B6B78"}" text-anchor="${o.anchor || "middle"}">${t}</text>`; }
+
+    const MOTIFS = {
+      plate: (a, o) => plate(o.mods, a, o),
+      finishes: (a, o) => o.swatches.map(([name, fill, kind], i) => {
+        const x = 30 + i * 70, extra = kind === "wood" ? [0, 1, 2, 3].map(k => `<path d="M${x + 5} ${70 + k * 14} q12.5 -5 25 0 t25 0" fill="none" stroke="#8A6238" stroke-opacity=".35"/>`).join("")
+          : kind === "metal" ? [0, 1, 2, 3, 4, 5].map(k => `<line x1="${x + 6}" y1="${66 + k * 10}" x2="${x + 54}" y2="${66 + k * 10}" stroke="#fff" stroke-opacity=".35"/>`).join("") : "";
+        const dark = kind === "dark";
+        return `<rect x="${x + 3}" y="${58 + 4}" width="60" height="72" rx="8" fill="#DCE3E9"/><rect x="${x}" y="58" width="60" height="72" rx="8" fill="${fill}" stroke="${EDGE}"/>${extra}<rect x="${x + 16}" y="72" width="28" height="44" rx="3" fill="${dark ? "#3A4652" : "#fff"}" fill-opacity="${kind === "wood" || kind === "metal" ? .55 : 1}" stroke="${dark ? "#4A5662" : EDGE}"/><rect x="${x + 26}" y="108" width="8" height="2" rx="1" fill="${a}"/>` + label(x + 30, 150, name);
+      }).join(""),
+      connect: (a) => `<rect x="44" y="40" width="64" height="120" rx="12" fill="${INK}"/><rect x="50" y="52" width="52" height="94" rx="4" fill="#1C2A36"/>${label(76, 70, "Living room", { color: "#fff", size: 7 })}<rect x="58" y="82" width="36" height="16" rx="8" fill="${a}"/><circle cx="86" cy="90" r="6" fill="#fff"/><rect x="58" y="106" width="36" height="16" rx="8" fill="#33424F"/><circle cx="66" cy="114" r="6" fill="#8796A3"/>` +
+        [0, 1, 2].map(k => `<path d="M${138 + k * 12} ${82 - k * 4} q10 18 0 36" fill="none" stroke="${a}" stroke-width="2.5" stroke-linecap="round" stroke-opacity="${1 - k * 0.25}"/>`).join("") + plate(["sw", "sw"], a, { cx: 236, mw: 38, h: 96 }),
+      roundSquare: (a) => plate(["round", "round"], a, { cx: 96, r: 48, mw: 42, h: 96 }) + plate(["sw", "sw"], a, { cx: 224, r: 8, mw: 42, h: 96 }) + label(96, 178, "Round") + label(224, 178, "Square"),
+      backplate: (a) => `<rect x="96" y="46" width="128" height="110" rx="6" fill="none" stroke="${INK}" stroke-opacity=".55" stroke-width="2"/>${[112, 152, 192].map(x => `<rect x="${x}" y="64" width="18" height="74" rx="2" fill="none" stroke="${INK}" stroke-opacity=".35"/>`).join("")}<circle cx="108" cy="58" r="3" fill="none" stroke="${INK}" stroke-opacity=".55"/><circle cx="212" cy="144" r="3" fill="none" stroke="${INK}" stroke-opacity=".55"/>` +
+        `<rect x="128" y="30" width="128" height="110" rx="12" fill="#fff" fill-opacity=".85" stroke="${EDGE}"/><path d="M262 88 h24 m-8 -6 l8 6 l-8 6" fill="none" stroke="${a}" stroke-width="2" stroke-linecap="round" transform="rotate(180 274 88)"/>` + label(160, 182, "Steel backplate with captive screws"),
+      shield: (a) => plate(["sw", "sw", "sk"], a, { cx: 140 }) + `<path d="M236 58 l30 12 v24 c0 20 -14 32 -30 38 c-16 -6 -30 -18 -30 -38 v-24 z" fill="${a}"/><path d="M224 96 l9 9 l17 -19" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
+      notch: (a) => plate(["sw", "sw", "sw"], a, { cx: 130, r: 4 }) + `<rect x="190" y="94" width="6" height="12" fill="#EEF2F5"/><rect x="190" y="94" width="6" height="12" fill="${a}" fill-opacity=".9"/><circle cx="242" cy="100" r="34" fill="#fff" stroke="${INK}" stroke-width="2.5"/><path d="M226 86 h18 v8 h-6 v12 h6 v8 h-18" fill="#fff" stroke="${EDGE}" stroke-width="1.5"/><rect x="238" y="94" width="6" height="12" fill="${a}"/><line x1="266" y1="124" x2="284" y2="142" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`,
+      silent: (a) => plate(["sw"], a, { cx: 110, mw: 60, h: 120 }) + [0, 1, 2].map(k => `<path d="M${168 + k * 16} ${80 - k * 8} q12 ${20 + k * 8} 0 ${40 + k * 16}" fill="none" stroke="${INK}" stroke-opacity="${0.35 - k * 0.1}" stroke-width="2.5" stroke-linecap="round"/>`).join("") + `<line x1="160" y1="140" x2="232" y2="60" stroke="${a}" stroke-width="4" stroke-linecap="round"/>` + label(250, 104, "Silent", { anchor: "start", bold: true, color: INK, size: 13 }),
+      clip: (a) => `<rect x="70" y="120" width="180" height="40" rx="4" fill="none" stroke="${INK}" stroke-opacity=".5" stroke-width="2"/>${[96, 146, 196].map(x => `<rect x="${x}" y="128" width="28" height="24" rx="2" fill="#fff" stroke="${EDGE}"/>`).join("")}` +
+        `<rect x="140" y="40" width="40" height="52" rx="4" fill="#fff" stroke="${EDGE}"/><path d="M136 70 l-6 10 m54 -10 l6 10" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/><line x1="160" y1="98" x2="160" y2="114" stroke="${a}" stroke-width="3" stroke-linecap="round"/><path d="M152 108 l8 8 l8 -8" fill="none" stroke="${a}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` + label(214, 66, "Snap-fit", { anchor: "start", bold: true, color: INK, size: 12 }) + label(214, 81, "no tools needed", { anchor: "start" }),
+      counter: (a) => label(160, 102, "40,000", { size: 46, bold: true, color: INK }) + `<rect x="112" y="118" width="96" height="4" rx="2" fill="${a}"/>` + label(160, 146, "switching operations tested", { size: 11 }),
+      ce: (a) => `<circle cx="112" cy="96" r="38" fill="none" stroke="${INK}" stroke-width="11" stroke-dasharray="180 60" transform="rotate(42 112 96)"/><circle cx="196" cy="96" r="38" fill="none" stroke="${INK}" stroke-width="11" stroke-dasharray="180 60" transform="rotate(42 196 96)"/><line x1="172" y1="96" x2="214" y2="96" stroke="${INK}" stroke-width="10"/>` + `<rect x="112" y="150" width="96" height="3" rx="1.5" fill="${a}"/>` + label(160, 172, "IEC 60669-1", { size: 11, bold: true, color: "#3A4A57" }),
+      ports: (a) => `<rect x="98" y="44" width="128" height="120" rx="12" fill="#DCE3E9"/><rect x="94" y="40" width="128" height="120" rx="12" fill="#fff" stroke="${EDGE}"/><rect x="114" y="78" width="42" height="14" rx="2" fill="${INK}"/><rect x="120" y="82" width="30" height="5" fill="#3A4652"/><rect x="170" y="79" width="26" height="11" rx="5.5" fill="${INK}"/><rect x="154" y="140" width="8" height="2" rx="1" fill="${a}"/>` + label(135, 112, "USB-A", { size: 8 }) + label(183, 112, "USB-C", { size: 8 }),
+      touch: (a) => `<rect x="84" y="34" width="152" height="132" rx="10" fill="#9AA6B1"/><rect x="88" y="38" width="144" height="124" rx="7" fill="${INK}"/>` + label(102, 60, "Scenes", { anchor: "start", color: "#fff", size: 9, bold: true }) + label(218, 60, "21°", { anchor: "end", color: a, size: 11, bold: true }) +
+        [["Welcome", 1], ["Dinner", 0], ["Cinema", 0], ["Night", 0]].map(([t, on], i) => { const x = 100 + (i % 2) * 62, y = 72 + Math.floor(i / 2) * 40; return `<rect x="${x}" y="${y}" width="56" height="32" rx="5" fill="${on ? a : "#1C2A36"}"/>` + label(x + 28, y + 20, t, { size: 8, color: on ? INK : "#C9D3DB", bold: !!on }); }).join(""),
+      network: (a) => `<line x1="40" y1="100" x2="280" y2="100" stroke="${INK}" stroke-width="3"/>` + [["Lighting", 70, 52], ["Blinds", 130, 148], ["HVAC", 190, 52], ["Scenes", 250, 148]].map(([t, x, y]) => `<line x1="${x}" y1="100" x2="${x}" y2="${y}" stroke="${INK}" stroke-opacity=".5" stroke-width="2"/><circle cx="${x}" cy="100" r="5" fill="${a}"/><rect x="${x - 26}" y="${y - (y < 100 ? 22 : 0)}" width="52" height="22" rx="5" fill="#fff" stroke="${EDGE}"/>` + label(x, y - (y < 100 ? 22 : 0) + 14, t, { size: 8, color: INK })).join("") + label(288, 94, "KNX", { size: 9, bold: true, color: a, anchor: "end" }),
+      button: (a) => `<rect x="104" y="40" width="112" height="120" rx="8" fill="#B9C0C6"/><rect x="104" y="40" width="112" height="120" rx="8" fill="none" stroke="#9AA6B1"/>` + [0, 1, 2, 3].map(i => { const x = 114 + (i % 2) * 48, y = 50 + Math.floor(i / 2) * 52; return `<rect x="${x}" y="${y}" width="44" height="48" rx="4" fill="${i === 1 ? "#E9EDF0" : "#D3D9DE"}" stroke="#A9B3BC"/><circle cx="${x + 22}" cy="${y + 24}" r="3" fill="${i === 1 ? a : "#8C98A3"}"/>`; }).join(""),
+    };
+
+    const RANGE_ART = {
+      "Aura Smart": [["plate", { mods: ["sw", "sw", "usb"], r: 6, h: 96 }], ["finishes", { swatches: [["White", "#FFFFFF"], ["Graphite", "#2B3640", "dark"], ["Brushed steel", "#AEB6BD", "metal"], ["Oak", "#C89B6A", "wood"]] }], ["connect", {}]],
+      "Prestige": [["plate", { mods: ["sw", "sk", "dim"] }], ["backplate", {}], ["roundSquare", {}]],
+      "Core": [["finishes", { swatches: [["Pearl", "#FFFFFF"], ["Sky", "#BFE0F3"], ["Terracotta", "#E7A98C"], ["Slate", "#5E6B77", "dark"]] }], ["shield", {}], ["plate", { mods: ["sw", "sw", "sk", "sw"], mw: 36 }]],
+      "Linea": [["notch", {}], ["silent", {}], ["clip", {}]],
+      "Essential": [["plate", { mods: ["sw", "sk"] }], ["counter", {}], ["ce", {}]],
+      "Spark": [["plate", { mods: ["sw", "sk", "usb"] }], ["ports", {}], ["clip", {}]],
+      "Prestige Connect": [["touch", {}], ["network", {}], ["button", {}]],
+    };
+    function rangeSvg(name, i, accent) { const [m, o] = RANGE_ART[name][i]; return svgDoc(MOTIFS[m](accent, o)); }
+    const ART_CACHE = {};
+    function rangeImg(name, i, accent) { const k = name + i; return ART_CACHE[k] || (ART_CACHE[k] = svgUri(rangeSvg(name, i, accent))); }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  RANGE CATALOGUE DATA: edit products, prices, images & descriptions here
+    //  Prices are in EUR. mrp = recommended retail price incl. VAT, price = dealer net excl. VAT
+    //  (accent / tier are display-only and are not sent to Conga)
+    //  Image & page URL fields are intentionally blank: Tier 1 demos must not show client imagery.
+    //  Blank highlight images fall back to the drawn range illustrations (RANGE_ART)
+    // ═══════════════════════════════════════════════════════════════════
+    const BRANDS = {
+      "Aura Smart": {
+        accent: "#8DD14F", tier: "Smart · Flagship",
+        tagline: "Connected control with an ultra-flat, design-led finish",
+        description: "Aura Smart brings an ultra-flat profile with precision-aligned plates in techno-polymer, metal and wood finishes. Its connected system offers voice, app and touch control for effortless everyday living, all managed through the Tier 1 Connect platform.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Precision-aligned ultra-flat plates" },
+          { img: "", caption: "Customisable finishes in metal and wood" },
+          { img: "", caption: "Integrated Tier 1 Connect compatibility" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "1-Way Switch (1M)", sku: "K4001A", mrp: 18.90, price: 13.25, img: "", desc: "Ultra-flat 1-way switch, 10 AX, soft-touch rocker, Tier 1 Connect ready" },
+          { name: "2-Way Switch (1M)", sku: "K4003A", mrp: 21.50, price: 15.05, img: "", desc: "2-way switch for stairs and corridors, silent mechanism, flat profile" },
+          { name: "Rotary Dimmer (2M)", sku: "K4407", mrp: 89.00, price: 62.30, img: "", desc: "Trailing-edge LED dimmer, 5 to 300 W, soft start" },
+          { name: "USB-A Charger (1M)", sku: "K4285C1", mrp: 42.00, price: 29.40, img: "", desc: "Single USB-A charger, 5 V 2.4 A, status LED" },
+          { name: "USB-C Charger (1M)", sku: "K4286C2", mrp: 54.90, price: 38.45, img: "", desc: "USB-C Power Delivery 20 W for phones and tablets" },
+          { name: "Schuko Socket 16A (2M)", sku: "K4180", mrp: 16.90, price: 11.85, img: "", desc: "Schuko socket outlet, 16 A 250 V, child protection shutters" },
+          { name: "Data Socket RJ45 Cat6 (1M)", sku: "K4179", mrp: 24.50, price: 17.15, img: "", desc: "Shielded Cat6 RJ45 outlet, tool-free termination" },
+          { name: "Blind Control Switch (2M)", sku: "K4412", mrp: 46.00, price: 32.20, img: "", desc: "Up and down roller blind switch with mechanical interlock" },
+          { name: "Bell Push (1M)", sku: "K4005A", mrp: 19.90, price: 13.95, img: "", desc: "Momentary push with illuminated bell symbol" },
+          { name: "3M Cover Plate", sku: "KA01M3", mrp: 22.00, price: 15.40, img: "", desc: "3-module plate, precision-aligned, techno-polymer, white" },
+          { name: "4M Cover Plate", sku: "KA01M4", mrp: 26.50, price: 18.55, img: "", desc: "4-module plate, seamless flat design, several finishes" },
+          { name: "6M Cover Plate", sku: "KA01M6", mrp: 34.90, price: 24.45, img: "", desc: "6-module plate, ultra-flat alignment, scratch-resistant" },
+        ]
+      },
+      "Prestige": {
+        accent: "#C9A86A", tier: "Premium",
+        tagline: "Premium range, silent mechanism, scratch-resistant finishes",
+        description: "Prestige is the Tier 1 premium modular switch range featuring mirror finishes, metal plates and designer aesthetics. With its silent click mechanism and scratch-resistant surfaces, Prestige delivers luxury in every switch action. Available in round and square formats.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Modular configuration flexibility" },
+          { img: "", caption: "Sturdy, installation-ready backplate" },
+          { img: "", caption: "Round and square rocker options" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "1-Way Switch (1M)", sku: "5727-00", mrp: 14.90, price: 10.45, img: "", desc: "Premium 1-way switch, silent mechanism, mirror white finish" },
+          { name: "2-Way Switch (1M)", sku: "5727-02", mrp: 16.80, price: 11.75, img: "", desc: "2-way switch for dual control, scratch-resistant finish" },
+          { name: "Double Pole Switch 20A (2M)", sku: "5727-31", mrp: 28.50, price: 19.95, img: "", desc: "For water heaters and air conditioning, neon indicator" },
+          { name: "Dual USB-C Charger (2M)", sku: "5735-96", mrp: 69.00, price: 48.30, img: "", desc: "Two USB-C ports, Power Delivery 30 W shared" },
+          { name: "Schuko Socket 16A (2M)", sku: "5728-80", mrp: 18.40, price: 12.90, img: "", desc: "Schuko socket outlet with shutters, 16 A 250 V" },
+          { name: "Digital Timer Switch (2M)", sku: "5727-55", mrp: 64.00, price: 44.80, img: "", desc: "7-day programmable timer for lighting and extract fans" },
+          { name: "Rotary Dimmer 400 W (2M)", sku: "5727-60", mrp: 79.00, price: 55.30, img: "", desc: "Push-rotary LED dimmer, minimum load 5 W, smooth curve" },
+          { name: "3M Round Plate (Mirror White)", sku: "5750-71", mrp: 32.00, price: 22.40, img: "", desc: "Round cover plate, mirror white tempered glass" },
+          { name: "6M Square Plate (Mirror White)", sku: "5750-81", mrp: 45.50, price: 31.85, img: "", desc: "Square cover plate, mirror white tempered glass" },
+        ]
+      },
+      "Core": {
+        accent: "#3BA7E0", tier: "Everyday",
+        tagline: "Reliable, modern, and built for everyday life",
+        description: "Core is the versatile Tier 1 modular switch range designed for modern homes. With polycarbonate bodies, silver alloy contacts and UV-resistant cover plates, Core offers durability and clean aesthetics at an accessible price point. CE marked and tested to IEC 60669-1.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Vibrant IMD decorative plates" },
+          { img: "", caption: "Long-lasting surface durability" },
+          { img: "", caption: "Elegant modular configurations" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "1-Way Switch 10AX (1M)", sku: "6730-40", mrp: 6.20, price: 4.35, img: "", desc: "Polycarbonate body, silver alloy contacts, 10 AX" },
+          { name: "2-Way Switch 10AX (1M)", sku: "6730-42", mrp: 7.40, price: 5.20, img: "", desc: "For stairs and landings, optional LED locator" },
+          { name: "Double Pole Switch 20A (1M)", sku: "6730-45", mrp: 12.90, price: 9.05, img: "", desc: "For water heaters and air conditioning, neon indicator" },
+          { name: "Schuko Socket 16A (2M)", sku: "6730-70", mrp: 7.90, price: 5.55, img: "", desc: "Schuko socket outlet, 16 A 250 V, child protection shutters" },
+          { name: "Schuko Socket with USB-A (2M)", sku: "6730-73", mrp: 29.90, price: 20.95, img: "", desc: "Schuko outlet with integrated USB-A charger, 2.1 A" },
+          { name: "USB-A Charger 2.1A (1M)", sku: "6730-81", mrp: 22.50, price: 15.75, img: "", desc: "USB-A charger, 5 V 2.1 A, status LED" },
+          { name: "Rotary Dimmer (2M)", sku: "6730-51", mrp: 39.00, price: 27.30, img: "", desc: "Trailing-edge LED dimmer, 5 to 200 W" },
+          { name: "TV / SAT Socket (1M)", sku: "6730-76", mrp: 11.80, price: 8.25, img: "", desc: "Coaxial outlet for TV and satellite, 75 ohm" },
+          { name: "6M Cover Plate", sku: "6730-96", mrp: 5.90, price: 4.15, img: "", desc: "High-gloss polycarbonate, UV resistant, white" },
+          { name: "8M Cover Plate", sku: "6730-97", mrp: 7.60, price: 5.30, img: "", desc: "High-gloss polycarbonate, UV resistant, white" },
+          { name: "12M Cover Plate", sku: "6730-99", mrp: 11.40, price: 8.00, img: "", desc: "For large switch panels, polycarbonate, white" },
+        ]
+      },
+      "Linea": {
+        accent: "#7B8CFF", tier: "Contemporary",
+        tagline: "Smart aesthetics for modern spaces",
+        description: "Linea is a contemporary Tier 1 switch range featuring clean lines and modern finishes. Designed for residential and light commercial applications, Linea offers an excellent balance of quality and value with a focus on aesthetic appeal.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Distinctive notch detailing" },
+          { img: "", caption: "Smooth, silent operation" },
+          { img: "", caption: "Simple, tool-free installation" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "1-Way Switch 10AX (1M)", sku: "LYN-SW-01", mrp: 5.40, price: 3.80, img: "", desc: "Slim profile, polycarbonate, contemporary design" },
+          { name: "2-Way Switch 10AX (1M)", sku: "LYN-SW-02", mrp: 6.50, price: 4.55, img: "", desc: "For multi-point control, silver alloy contacts" },
+          { name: "Schuko Socket 16A (2M)", sku: "LYN-SK-01", mrp: 6.90, price: 4.85, img: "", desc: "Schuko socket outlet with shutters, 16 A 250 V" },
+          { name: "Rotary Dimmer (2M)", sku: "LYN-DM-01", mrp: 34.00, price: 23.80, img: "", desc: "Compact trailing-edge LED dimmer, 5 to 150 W" },
+          { name: "6M Cover Plate", sku: "LYN-CP-06", mrp: 4.80, price: 3.35, img: "", desc: "Clean edge design, white polycarbonate" },
+          { name: "8M Cover Plate", sku: "LYN-CP-08", mrp: 6.20, price: 4.35, img: "", desc: "Contemporary finish, UV resistant" },
+        ]
+      },
+      "Essential": {
+        accent: "#F2A93B", tier: "Value",
+        tagline: "Trusted quality at an affordable price",
+        description: "Essential is the value-focused Tier 1 modular switch range, made for large housing projects and budget-conscious installations. The price point is accessible, but the build quality is pure Tier 1, with full CE certification.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Compact modular design" },
+          { img: "", caption: "Tested to 40,000 operations" },
+          { img: "", caption: "CE marked to IEC 60669-1" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "1-Way Switch 10AX (1M)", sku: "MYL-SW-01", mrp: 3.20, price: 2.25, img: "", desc: "Value 1-way switch, silver alloy contacts" },
+          { name: "2-Way Switch 10AX (1M)", sku: "MYL-SW-02", mrp: 3.90, price: 2.75, img: "", desc: "For multi-point lighting control" },
+          { name: "Double Pole Switch 20A (1M)", sku: "MYL-SW-16", mrp: 7.50, price: 5.25, img: "", desc: "Heavy-duty double pole switch, neon indicator" },
+          { name: "Schuko Socket 16A (2M)", sku: "MYL-SK-01", mrp: 4.60, price: 3.20, img: "", desc: "Schuko socket outlet with shutters" },
+          { name: "Push Button (1M)", sku: "MYL-PB-01", mrp: 4.10, price: 2.85, img: "", desc: "Momentary push for bells and stair timers" },
+          { name: "6M Cover Plate", sku: "MYL-CP-06", mrp: 2.90, price: 2.05, img: "", desc: "Gloss white polycarbonate" },
+        ]
+      },
+      "Spark": {
+        accent: "#FF6B6B", tier: "Entry",
+        tagline: "Affordable innovation for every home",
+        description: "Spark is the newest Tier 1 entry range, engineered to bring quality electrical fittings to the mass market. Compact, reliable and designed for fast installation, Spark brings Tier 1 quality within reach of every household.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Multi-utility modular range" },
+          { img: "", caption: "USB-A and USB-C charging" },
+          { img: "", caption: "Snap-fit, fast installation" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "1-Way Switch 10AX (1M)", sku: "ALZ-SW-01", mrp: 2.60, price: 1.80, img: "", desc: "Durable polycarbonate, snap-fit mechanism" },
+          { name: "Schuko Socket 16A (2M)", sku: "ALZ-SK-01", mrp: 3.90, price: 2.75, img: "", desc: "Schuko socket outlet with shutters, compact body" },
+          { name: "Double Pole Switch 20A (1M)", sku: "ALZ-SW-16", mrp: 6.40, price: 4.50, img: "", desc: "For water heaters and air conditioning, neon indicator" },
+          { name: "USB-A + USB-C Charger (2M)", sku: "ALZ-USB-02", mrp: 19.90, price: 13.95, img: "", desc: "Dual charger, 3.1 A shared between ports" },
+          { name: "6M Cover Plate", sku: "ALZ-CP-06", mrp: 2.40, price: 1.70, img: "", desc: "Basic white polycarbonate" },
+        ]
+      },
+      "Prestige Connect": {
+        accent: "#2FD4C0", tier: "Automation · KNX",
+        tagline: "Next-generation luxury with KNX intelligence",
+        description: "Prestige Connect combines the premium Prestige design language with advanced KNX bus technology. Perfect for luxury residences, five-star hotels and premium commercial spaces demanding both aesthetics and intelligent building automation.",
+        heroImg: "",
+        highlights: [
+          { img: "", caption: "Premium metallic touch interface" },
+          { img: "", caption: "Scalable automation-ready system" },
+          { img: "", caption: "Superior tactile experience" },
+        ],
+        pageUrl: "",
+        products: [
+          { name: "KNX Push Button, 4-Fold (2M)", sku: "AA-KNX-01", mrp: 189.00, price: 132.30, img: "", desc: "Programmable scene control, backlit, bus-powered" },
+          { name: "KNX Room Thermostat (2M)", sku: "AA-KNX-02", mrp: 265.00, price: 185.50, img: "", desc: "Display thermostat with temperature and humidity sensing" },
+          { name: "KNX Dimming Actuator, 4-Channel", sku: "AA-KNX-03", mrp: 420.00, price: 294.00, img: "", desc: "DIN rail universal dimmer, 4 × 250 W, LED compatible" },
+          { name: "KNX Touch Panel 3.5\" (Glass)", sku: "AA-TP-01", mrp: 690.00, price: 483.00, img: "", desc: "Capacitive panel for scenes, HVAC and blinds, tempered glass" },
+          { name: "3M Plate (Brushed Metal)", sku: "AA-CP-03", mrp: 58.00, price: 40.60, img: "", desc: "3-module plate in brushed aluminium" },
+        ]
+      },
+    };
+
+    const BRAND_NAMES = Object.keys(BRANDS);
+    const TOTAL_SKUS = BRAND_NAMES.reduce((s, n) => s + BRANDS[n].products.length, 0);
+
+    // ═══════════════════════════════════════════════════════════════════
+
+    function App() {
+      const [selectedBrand, setSelectedBrand] = useState(null);
+      const [showJSON, setShowJSON] = useState(false);
+      const [generatingDoc, setGeneratingDoc] = useState(false);
+      const [apiSteps, setApiSteps] = useState([]);
+      const [showTech, setShowTech] = useState(false);
+      const [downloadUrl, setDownloadUrl] = useState(null);
+      const [downloadFileName, setDownloadFileName] = useState(null);
+      const [lastToken, setLastToken] = useState(null);
+      const [view, setView] = useState("grid");
+      const [copied, setCopied] = useState(false);
+
+      const brand = selectedBrand ? BRANDS[selectedBrand] : null;
+      const minP = brand ? Math.min(...brand.products.map(p => p.price)) : 0;
+      const maxP = brand ? Math.max(...brand.products.map(p => p.price)) : 0;
+
+      // Build JSON for Conga
+      const issued = new Date();
+      const validUntil = new Date(issued.getTime() + PRICE_VALIDITY_DAYS * 86400000);
+      const catalogueJSON = selectedBrand && brand ? JSON.stringify({
+        brand: selectedBrand,
+        tagline: brand.tagline,
+        description: brand.description,
+        heroImg: brand.heroImg,
+        highlights: brand.highlights.map((h, i) => ({ img: h.img || rangeImg(selectedBrand, i, brand.accent), caption: h.caption })),
+        // Flat fields for the three-up image gallery in the template
+        ...Object.fromEntries(brand.highlights.slice(0, 3).flatMap((h, i) => [
+          ["img" + (i + 1), h.img || rangeImg(selectedBrand, i, brand.accent)],
+          ["caption" + (i + 1), h.caption],
+        ])),
+        pageUrl: brand.pageUrl,
+        products: brand.products.map(p => ({
+          name: p.name, sku: p.sku, mrp: fmt(p.mrp), price: fmt(p.price),
+          img: p.img, desc: p.desc,
+        })),
+        totalProducts: brand.products.length,
+        priceRange: fmt(minP) + " – " + fmt(maxP),
+        currency: "EUR",
+        generatedAt: longDate(issued),
+        validUntil: longDate(validUntil),
+      }, null, 2) : "{}";
+
+      // Conga helpers
+      function addStep(s) { setApiSteps(p => [...p, { ...s, ts: new Date().toISOString() }]); }
+      function updLast(u) { setApiSteps(p => { const c = [...p]; c[c.length-1] = { ...c[c.length-1], ...u }; return c; }); }
+
+      async function handleGenerate() {
+        if (!CONGA_AUTH_URL) { alert("Set Conga API credentials in source code."); return; }
+        if (!selectedBrand) { alert("Select a range first."); return; }
+        setGeneratingDoc(true); setApiSteps([]); setDownloadUrl(null); setDownloadFileName(null);
+        let token = null, corrId = null;
+
+        // Step 1
+        addStep({ step: 1, name: "Authenticate", method: "POST", url: CONGA_AUTH_URL, status: "pending", body: "client_credentials", resp: null, code: null });
+        try {
+          const b = new URLSearchParams(); b.append("grant_type","client_credentials"); b.append("client_id",CONGA_CLIENT_ID); b.append("client_secret",CONGA_CLIENT_SECRET);
+          const r = await fetch(CONGA_AUTH_URL, { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body: b.toString() });
+          const d = await r.json().catch(() => null);
+          if (r.ok && d?.access_token) { token = d.access_token; setLastToken(token); updLast({ status:"success", code:r.status, resp: "Token received" }); }
+          else { updLast({ status:"error", code:r.status, resp: JSON.stringify(d) }); setGeneratingDoc(false); return; }
+        } catch(e) { updLast({ status:"error", code:"Err", resp:e.message }); setGeneratingDoc(false); return; }
+
+        // Step 2
+        const payload = { output:{generateDocumentDownload:true}, legacyOptions:{DefaultPdf:"1", OFN: selectedBrand + " Catalogue"}, TemplateSources:[{IntegrationName:"conga",fileId:CONGA_TEMPLATE_FILE_ID}], Destinations:[{IntegrationName:"conga",folderId:CONGA_DEST_FOLDER}], Locale:"en-US", JsonData: catalogueJSON };
+        addStep({ step: 2, name: "Send Merge", method: "POST", url: CONGA_MERGE_URL, status: "pending", body: "JSON payload", resp: null, code: null });
+        try {
+          const r = await fetch(CONGA_MERGE_URL, { method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}, body: JSON.stringify(payload) });
+          const d = await r.json().catch(() => null);
+          if (r.ok && d?.correlationId) { corrId = d.correlationId; updLast({ status:"success", code:r.status, resp:"correlationId: "+corrId }); }
+          else { updLast({ status:"error", code:r.status, resp: JSON.stringify(d) }); setGeneratingDoc(false); return; }
+        } catch(e) { updLast({ status:"error", code:"Err", resp:e.message }); setGeneratingDoc(false); return; }
+
+        // Step 3
+        addStep({ step: 3, name: "Poll Status", method: "GET", url: CONGA_STATUS_URL+"/"+corrId, status: "pending", body: "none", resp: null, code: null });
+        let done = false;
+        for (let i=0;i<10;i++) {
+          await new Promise(r=>setTimeout(r, i===0?2000:3000));
+          try {
+            const r = await fetch(CONGA_STATUS_URL+"/"+corrId, { headers:{"Authorization":"Bearer "+token,"showDetails":"true"} });
+            const d = await r.json().catch(() => null);
+            if (r.ok && d?.message==="Completed") { updLast({ status:"success", code:r.status, resp:"Completed" }); done=true; break; }
+            else if (r.ok) { updLast({ status:"pending", resp:"Polling #"+(i+1)+"... "+d?.message }); }
+            else { updLast({ status:"error", code:r.status, resp:JSON.stringify(d) }); break; }
+          } catch(e) { updLast({ status:"error", resp:e.message }); break; }
+        }
+        if (!done) {
+          setApiSteps(p => { const c = [...p]; const l = c[c.length-1]; c[c.length-1] = { ...l, status: l.status === "pending" ? "error" : l.status, resp: (l.resp || "") + " Timed out." }; return c; });
+          setGeneratingDoc(false); return;
+        }
+
+        // Step 4
+        addStep({ step: 4, name: "Get Download", method: "GET", url: CONGA_PRESIGNED_URL+"/"+corrId, status: "pending", body: "none", resp: null, code: null });
+        try {
+          const r = await fetch(CONGA_PRESIGNED_URL+"/"+corrId, { headers:{"Authorization":"Bearer "+token} });
+          const d = await r.json().catch(() => null);
+          let url=null,fn=null;
+          if (d?.preSignedCreateResponseModel?.fileInfoDetailsList?.length>0) { url=d.preSignedCreateResponseModel.fileInfoDetailsList[0].url; fn=d.preSignedCreateResponseModel.fileInfoDetailsList[0].fileName; }
+          if (r.ok && url) { setDownloadUrl(url); setDownloadFileName(fn||selectedBrand+" Catalogue.pdf"); updLast({ status:"success", code:r.status, resp:"Download ready" }); }
+          else { updLast({ status:"success", code:r.status, resp:"Response received, see technical details" }); }
+        } catch(e) { updLast({ status:"error", resp:e.message }); }
+        setGeneratingDoc(false);
+      }
+
+      function handleDownload() {
+        if (!downloadUrl || !lastToken) return;
+        fetch(downloadUrl, { headers:{"Authorization":"Bearer "+lastToken} })
+          .then(r => { if(!r.ok) throw new Error("HTTP "+r.status); return r.blob(); })
+          .then(bl => { const b=new Blob([bl],{type:bl.type||"application/pdf"}); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download=downloadFileName||"Catalogue.pdf"; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(u),1000); })
+          .catch(e => alert("Download failed: "+e.message));
+      }
+
+      function pick(name) { setSelectedBrand(name); setShowJSON(false); setApiSteps([]); setDownloadUrl(null); window.scrollTo({ top: 0, behavior: "smooth" }); }
+      function copyJSON() { navigator.clipboard.writeText(catalogueJSON); setCopied(true); setTimeout(() => setCopied(false), 1600); }
+
+      const ALL_STEPS = ["Authenticate", "Send Merge", "Poll Status", "Get Download"];
+      const accent = brand ? brand.accent : L.lime;
+      const eyebrow = { fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" };
+
+      return (
+        <div style={{ minHeight: "100vh", background: L.bg }}>
+
+          {/* HEADER */}
+          <header style={{ background: L.ink, borderBottom: "1px solid rgba(255,255,255,0.06)", position: "sticky", top: 0, zIndex: 100 }}>
+            <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 18, cursor: "pointer" }} onClick={() => setSelectedBrand(null)}>
+                <Tier1Logo size={26} light sub="SWITCHES" />
+                <div className="hdr-sub" style={{ width: 1, height: 32, background: "rgba(255,255,255,0.12)" }} />
+                <div className="hdr-sub">
+                  <div style={{ ...hd, fontSize: 15, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>Range Catalogue</div>
+                  <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)" }}>Dealer price lists · EUR</div>
+                </div>
+              </div>
+              <div className="hdr-count num" style={{ fontSize: 12.5, color: "rgba(255,255,255,0.55)" }}>
+                {BRAND_NAMES.length} ranges <span style={{ opacity: 0.4, margin: "0 6px" }}>/</span> {TOTAL_SKUS} SKUs
+              </div>
+            </div>
+          </header>
+
+          <div className="layout" style={{ maxWidth: 1320, margin: "0 auto", padding: "24px 24px 64px", minHeight: "80vh" }}>
+
+            {/* SIDEBAR: range selector */}
+            <aside>
+              <div className="side" style={{ background: L.ink, borderRadius: L.radius, padding: "16px 12px", position: "sticky", top: 96 }}>
+                <div style={{ ...eyebrow, fontSize: 10.5, color: "rgba(255,255,255,0.4)", margin: "2px 10px 10px" }}>Product ranges</div>
+                <div className="side-list">
+                  <button className="range-btn" onClick={() => setSelectedBrand(null)} style={{ display: "flex", alignItems: "center", width: "100%", textAlign: "left", padding: "9px 10px", border: "none", background: !selectedBrand ? "rgba(255,255,255,0.08)" : "transparent", color: !selectedBrand ? "#fff" : "rgba(255,255,255,0.7)", fontSize: 13.5, fontWeight: !selectedBrand ? 600 : 500, cursor: "pointer", borderRadius: 8, marginBottom: 6 }}>All ranges</button>
+                  {BRAND_NAMES.map(name => {
+                    const on = selectedBrand === name;
+                    return (
+                      <button key={name} className="range-btn" onClick={() => pick(name)} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: "left", padding: "9px 10px", border: "none", background: on ? "rgba(255,255,255,0.08)" : "transparent", color: "#fff", fontSize: 13.5, cursor: "pointer", borderRadius: 8, marginBottom: 2, boxShadow: on ? `inset 2px 0 0 ${BRANDS[name].accent}` : "none" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 2, background: BRANDS[name].accent, flexShrink: 0 }} />
+                        <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
+                          <span style={{ fontWeight: on ? 600 : 500, color: on ? "#fff" : "rgba(255,255,255,0.8)" }}>{name}</span>
+                          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{BRANDS[name].tier}</span>
+                        </span>
+                        <span className="num" style={{ marginLeft: "auto", fontSize: 11.5, color: on ? "#fff" : "rgba(255,255,255,0.35)" }}>{BRANDS[name].products.length}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+
+            {/* MAIN */}
+            <main style={{ minWidth: 0 }}>
+              {!selectedBrand ? (
+                <div className="fade">
+                  <div style={{ background: L.ink, borderRadius: L.radius, color: "#fff", padding: "44px 40px", marginBottom: 20, borderBottom: `3px solid ${L.lime}` }}>
+                    <div style={{ ...eyebrow, color: L.lime, marginBottom: 14 }}>Tier 1 Switches · Dealer edition</div>
+                    <h1 style={{ ...hd, fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 600, lineHeight: 1.1, letterSpacing: "-0.025em", maxWidth: 620 }}>Every switch range and its dealer pricing, in one place.</h1>
+                    <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", marginTop: 14, maxWidth: 540 }}>Choose a range to review its products and dealer net prices, then generate a branded PDF price list for your customer.</p>
+                  </div>
+                  <div className="range-grid">
+                    {BRAND_NAMES.map(name => {
+                      const b = BRANDS[name];
+                      return (
+                        <div key={name} className="rcard" onClick={() => pick(name)} style={{ background: L.white, borderRadius: L.radius, border: `1px solid ${L.border}`, borderTop: `3px solid ${b.accent}`, padding: "20px 22px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ ...eyebrow, fontSize: 10.5, color: L.textLight }}>{b.tier}</span>
+                            <span className="num" style={{ fontSize: 12, color: L.textLight }}>{b.products.length} SKUs</span>
+                          </div>
+                          <div style={{ ...hd, fontSize: 21, fontWeight: 600, color: L.ink, marginTop: 6, letterSpacing: "-0.015em" }}>{name}</div>
+                          <div style={{ fontSize: 13, color: L.textLight, marginTop: 2, minHeight: 42 }}>{b.tagline}</div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: `1px solid ${L.border}` }}>
+                            <span style={{ fontSize: 12.5, color: L.textLight }}>Dealer net from <b className="num" style={{ color: L.ink, fontWeight: 600 }}>{fmt(Math.min(...b.products.map(p => p.price)))}</b></span>
+                            <span className="rcard-cta" style={{ fontSize: 13, fontWeight: 600, color: L.navyMid }}>View range →</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div key={selectedBrand} className="fade">
+                  {/* Range hero */}
+                  <div style={{ background: L.ink, borderRadius: L.radius, color: "#fff", marginBottom: 16, padding: "36px 36px 32px", borderBottom: `3px solid ${accent}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 28 }}>
+                      <div style={{ flex: "1 1 420px" }}>
+                        <div style={{ ...eyebrow, color: accent, marginBottom: 12 }}>{brand.tier}</div>
+                        <h2 style={{ ...hd, fontSize: "clamp(30px, 4vw, 46px)", fontWeight: 600, margin: "0 0 8px", letterSpacing: "-0.03em", lineHeight: 1 }}>{selectedBrand}</h2>
+                        <p style={{ fontSize: 16.5, color: "rgba(255,255,255,0.88)", margin: "0 0 12px", fontWeight: 500 }}>{brand.tagline}</p>
+                        <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.55)", lineHeight: 1.7, maxWidth: 620 }}>{brand.description}</p>
+                      </div>
+                      <div style={{ display: "flex", flexShrink: 0, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12 }}>
+                        {[[brand.products.length, "Products"], [fmt(minP), "From"], [fmt(maxP), "To"]].map(([v, k], i) => (
+                          <div key={k} style={{ padding: "12px 18px", minWidth: 96, borderLeft: i ? "1px solid rgba(255,255,255,0.12)" : "none" }}>
+                            <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>{k}</div>
+                            <div className="num" style={{ fontSize: 20, fontWeight: 600, ...hd, color: "#fff" }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Highlights */}
+                  {brand.highlights && brand.highlights.length > 0 && (
+                    <div className="hl-grid" style={{ background: L.white, borderRadius: L.radius, border: `1px solid ${L.border}`, marginBottom: 16 }}>
+                      {brand.highlights.map((h, i) => (
+                        <div key={selectedBrand + "-hl-" + i} style={{ padding: 14 }}>
+                          <img src={h.img || rangeImg(selectedBrand, i, brand.accent)} alt="" style={{ display: "block", width: "100%", aspectRatio: "8 / 5", borderRadius: 8 }} />
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10 }}>
+                            <span className="num" style={{ ...hd, fontSize: 12.5, fontWeight: 600, color: L.textLight }}>0{i + 1}</span>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: L.ink, lineHeight: 1.35 }}>{h.caption}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Product line-up */}
+                  <div style={{ background: L.white, borderRadius: L.radius, border: `1px solid ${L.border}`, overflow: "hidden", marginBottom: 16 }}>
+                    <div style={{ padding: "18px 22px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, borderBottom: `1px solid ${L.border}` }}>
+                      <div>
+                        <div style={{ ...hd, fontSize: 18, fontWeight: 600, color: L.ink }}>Rate card</div>
+                        <div style={{ fontSize: 12.5, color: L.textLight }}>Prices in euro. RRP includes VAT, dealer net excludes VAT.</div>
+                      </div>
+                      <div style={{ display: "flex", background: L.bg, borderRadius: 9, padding: 3 }}>
+                        {[["grid", "Cards"], ["table", "Table"]].map(([k, t]) => (
+                          <button key={k} onClick={() => setView(k)} style={{ border: "none", padding: "6px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", background: view === k ? L.white : "transparent", color: view === k ? L.ink : L.textLight, boxShadow: view === k ? "0 1px 2px rgba(11,22,33,0.12)" : "none" }}>{t}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {view === "grid" ? (
+                      <div className="prod-grid" style={{ padding: 18 }}>
+                        {brand.products.map((p, i) => (
+                          <div key={i} className="pcard" style={{ border: `1px solid ${L.border}`, borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column", background: L.white }}>
+                            <div style={{ aspectRatio: "1 / 0.72", background: L.bgAlt, borderBottom: `1px solid ${L.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <ProductImage p={p} accent={accent} />
+                            </div>
+                            <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", flex: 1 }}>
+                              <div style={{ fontSize: 11, color: L.textLight, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{p.sku}</div>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: L.ink, lineHeight: 1.3, marginTop: 2 }}>{p.name}</div>
+                              <div style={{ fontSize: 12, color: L.textLight, marginTop: 4, lineHeight: 1.45, flex: 1 }}>{p.desc}</div>
+                              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${L.border}` }}>
+                                <span className="num" style={{ fontSize: 17, fontWeight: 600, color: L.ink, ...hd }}>{fmt(p.price)}</span>
+                                <span className="num" style={{ fontSize: 11.5, color: L.textLight }}>RRP {fmt(p.mrp)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+                          <thead><tr style={{ background: L.bgAlt, borderBottom: `1px solid ${L.border}` }}>
+                            {["Product", "SKU", "Description", "RRP", "Dealer net"].map((h, i) => (
+                              <th key={i} style={{ padding: "10px 18px", textAlign: i >= 3 ? "right" : "left", color: L.textLight, fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>{h}</th>
+                            ))}
+                          </tr></thead>
+                          <tbody>
+                            {brand.products.map((p, i) => (
+                              <tr key={i} style={{ borderBottom: `1px solid ${L.border}` }}>
+                                <td style={{ padding: "11px 18px", fontWeight: 600, color: L.ink, whiteSpace: "nowrap" }}>{p.name}</td>
+                                <td style={{ padding: "11px 18px", fontSize: 12, color: L.textLight, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", whiteSpace: "nowrap" }}>{p.sku}</td>
+                                <td style={{ padding: "11px 18px", fontSize: 12.5, color: L.textLight, minWidth: 240 }}>{p.desc}</td>
+                                <td className="num" style={{ padding: "11px 18px", textAlign: "right", color: L.textLight, whiteSpace: "nowrap" }}>{fmt(p.mrp)}</td>
+                                <td className="num" style={{ padding: "11px 18px", textAlign: "right", fontWeight: 700, color: L.ink, whiteSpace: "nowrap" }}>{fmt(p.price)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Generate panel */}
+                  <div style={{ background: L.ink, borderRadius: L.radius, color: "#fff", padding: "24px 26px", marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+                      <div>
+                        <div style={{ ...hd, fontSize: 19, fontWeight: 600 }}>Generate the {selectedBrand} price list</div>
+                        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Merges this range into the Tier 1 catalogue template with Conga Composer and returns a PDF</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button className="ghost" onClick={() => setShowJSON(!showJSON)} style={btnGhost}>{showJSON ? "Hide data" : "View data"}</button>
+                        <button className="ghost" onClick={copyJSON} style={{ ...btnGhost, color: copied ? L.lime : "#fff" }}>{copied ? "Copied" : "Copy JSON"}</button>
+                        <button className="primary" onClick={handleGenerate} disabled={generatingDoc} style={{ ...btnR, opacity: generatingDoc ? 0.75 : 1, cursor: generatingDoc ? "wait" : "pointer" }}>
+                          {generatingDoc ? <span className="pulse">Generating…</span> : apiSteps.length > 0 ? "Generate again" : "Generate PDF"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Download */}
+                    {downloadUrl && (
+                      <div className="fade" style={{ display: "flex", alignItems: "center", gap: 14, border: `1px solid rgba(141,209,79,0.4)`, borderRadius: 12, padding: "12px 14px", marginTop: 18, flexWrap: "wrap" }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 8, background: "rgba(141,209,79,0.14)", color: L.lime, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", ...hd }}>PDF</div>
+                        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{downloadFileName}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Ready to download</div></div>
+                        <button className="primary" onClick={handleDownload} style={{ ...btnR, padding: "10px 18px" }}>Download PDF</button>
+                      </div>
+                    )}
+
+                    {/* API Steps */}
+                    {apiSteps.length > 0 && (
+                      <div style={{ marginTop: 20 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                          <span style={{ ...eyebrow, fontSize: 10.5, color: "rgba(255,255,255,0.45)" }}>Conga API pipeline</span>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>
+                            <input type="checkbox" checked={showTech} onChange={e => setShowTech(e.target.checked)} style={{ accentColor: L.lime }} /> Technical details
+                          </label>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+                          {ALL_STEPS.map((name, i) => {
+                            const s = apiSteps[i];
+                            const st = s ? s.status : "idle";
+                            const col = st === "success" ? L.lime : st === "error" ? "#FF7A7A" : st === "pending" ? "#FFD166" : "rgba(255,255,255,0.25)";
+                            return (
+                              <div key={i} style={{ border: `1px solid ${st === "idle" ? "rgba(255,255,255,0.08)" : col + "55"}`, borderRadius: 10, padding: "11px 13px", fontSize: 13 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <span className={st === "pending" ? "pulse" : ""} style={{ width: 22, height: 22, borderRadius: 999, background: st === "idle" ? "transparent" : col, border: `1.5px solid ${col}`, color: L.ink, fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>{st === "success" ? "✓" : st === "error" ? "!" : i + 1}</span>
+                                  <span style={{ fontWeight: 600, opacity: st === "idle" ? 0.45 : 1 }}>{name}</span>
+                                  <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 600, textTransform: "capitalize", color: col }}>{st === "idle" ? "" : st}</span>
+                                </div>
+                                {showTech && s && <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.5)", marginTop: 8, wordBreak: "break-all", fontFamily: "ui-monospace, monospace" }}>{s.method} {s.url}<br/>Response: {s.resp || "..."}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* JSON */}
+                  {showJSON && (
+                    <pre className="fade" style={{ background: L.ink, color: "#C9E8A8", borderRadius: L.radius, padding: 22, fontSize: 12, lineHeight: 1.7, overflow: "auto", maxHeight: 500, fontFamily: "ui-monospace, 'Fira Code', monospace" }}>{catalogueJSON}</pre>
+                  )}
+                </div>
+              )}
+            </main>
+          </div>
+
+          {/* FOOTER */}
+          <footer style={{ background: L.ink, color: "#fff", padding: "32px 24px" }}>
+            <div style={{ maxWidth: 1320, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 18 }}>
+              <Tier1Logo size={22} light sub="SWITCHES" />
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", textAlign: "right" }}>© {new Date().getFullYear()} Tier 1 Systems. Prices in EUR, subject to change.<br />Document generation by Conga Composer.</div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tier 1 Healthcare | Outpatient Chargesheet</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2321405A'/%3E%3Ctext x='32' y='45' font-family='Arial' font-weight='900' font-size='38' text-anchor='middle' fill='%237CC242'%3E1%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@400;900&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; color: #1F2D3A; background: #F3F6F5; font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    input, select, button, textarea { font-family: inherit; }
+    input:focus, select:focus, textarea:focus { border-color: #4FAE3E !important; box-shadow: 0 0 0 3px rgba(79,174,62,0.14); outline: none; }
+    button { transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease; }
+    button:focus-visible { outline: 2px solid #4FAE3E; outline-offset: 2px; }
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #C9D6D0; border-radius: 3px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+    .svc-btn:hover { border-color: #4FAE3E !important; }
+    .svc-btn.on:hover { background: #E3F2DE !important; }
+    .rm:hover { background: #FFF1F1 !important; color: #C93C3C !important; border-color: #F2C9C9 !important; }
+    .primary:not(:disabled):hover { background: #449A35 !important; }
+    .link:hover { color: #132A3D !important; text-decoration: underline; }
+    .row-in { animation: rowIn .25s ease both; }
+    @keyframes rowIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+    .pulse { animation: pulse 1.2s ease-in-out infinite; }
+    input[type=number]::-webkit-inner-spin-button { opacity: .5; }
+    @media (max-width: 860px) {
+      .g2 { grid-template-columns: 1fr; }
+      .hero-stats { display: none !important; }
+      .hdr-sub { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    // ─── Conga API Credentials ───
+    const CONGA_AUTH_URL    = "https://login-preview.congacloud.eu/api/v1/auth/connect/token";
+    const CONGA_CLIENT_ID   = "2840eba2-0101-4f29-ba08-86ae2fa76169";
+    const CONGA_CLIENT_SECRET = "XpJws98s!6sLY!$u4$g0i!$@O";
+    const CONGA_MERGE_URL     = "https://coreapps-preview.congacloud.eu/api/ingress/v1/Merge";
+    const CONGA_STATUS_URL    = "https://coreapps-preview.congacloud.eu/api/ingress/v1/status";
+    const CONGA_PRESIGNED_URL = "https://coreapps-preview.congacloud.eu/api/presigned/v1/PreSignedService";
+    const CONGA_TEMPLATE_FILE_ID = "d9067cd6-4644-4b9e-a00d-68599f37ae92";
+    const CONGA_DEST_FOLDER      = "My Files";
+
+    // ─── Tier 1 Healthcare Brand ───
+    const T = {
+      navy: "#21405A", navyDeep: "#132A3D", ink: "#0E1E2C",
+      green: "#4FAE3E", greenDeep: "#3E8A30", greenBright: "#7CC242", greenSoft: "#EEF7EA", mint: "#F3F6F5",
+      text: "#1F2D3A", textLight: "#6B7C8A", white: "#fff", bgAlt: "#F7FAF8", border: "#E1E9E5", radius: "14px",
+    };
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+    const EUR = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
+    function fmt(a) { return EUR.format(a); }
+    function longDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso + "T12:00:00");
+      return isNaN(d) ? iso : d.toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" });
+    }
+    function todayISO() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0]; }
+    function or(v, fallback) { return v && String(v).trim() ? v : fallback; }
+
+    const card = { background: T.white, borderRadius: T.radius, border: `1px solid ${T.border}`, padding: "26px" };
+    const lbl = { display: "block", fontSize: "11px", fontWeight: 700, color: T.textLight, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "6px" };
+    const inp = { width: "100%", padding: "10px 13px", border: `1px solid ${T.border}`, borderRadius: "9px", fontSize: "14px", color: T.text, background: T.white, boxSizing: "border-box", transition: "border-color .15s, box-shadow .15s" };
+    const cellInp = { width: "100%", padding: "6px 8px", border: `1px solid ${T.border}`, borderRadius: "7px", fontSize: "13px", color: T.text, background: T.white, boxSizing: "border-box" };
+    const btnG = { padding: "12px 24px", background: T.green, color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: "pointer" };
+
+    // ─── Tier 1 logo lockup (recreated in HTML for crisp rendering) ───
+    function Tier1Logo({ size = 30, light = false, sub = "SYSTEMS" }) {
+      const navy = light ? "#fff" : T.navy;
+      const bar = { width: size * 0.17, height: size * 0.16, background: navy, borderRadius: 1 };
+      const w = { fontFamily: "'Montserrat', sans-serif", fontWeight: 900, fontSize: size, lineHeight: 1, color: navy, letterSpacing: "-0.02em" };
+      return (
+        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch", userSelect: "none" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: size * 0.05 }}>
+            <span style={w}>T</span>
+            <span style={{ display: "flex", flexDirection: "column", gap: size * 0.05, padding: `0 ${size * 0.03}px`, marginBottom: size * 0.09 }}>
+              <span style={{ ...bar, background: T.greenBright }} /><span style={bar} /><span style={bar} /><span style={bar} />
+            </span>
+            <span style={w}>ER</span>
+            <span style={{ ...w, color: T.greenBright }}>1</span>
+          </div>
+          <div style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: size * 0.36, color: T.greenBright, letterSpacing: "0.32em", marginTop: size * 0.1, textAlign: "center", paddingLeft: "0.32em" }}>{sub}</div>
+        </div>
+      );
+    }
+
+    function SectionTitle({ n, title, hint, action }) {
+      return (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
+          <div className="num" style={{ width: 26, height: 26, borderRadius: 7, border: `1px solid ${T.border}`, color: T.navy, fontWeight: 700, fontSize: 12.5, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{n}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16.5, fontWeight: 700, color: T.navyDeep, letterSpacing: "-0.01em", lineHeight: 1.35 }}>{title}</div>
+            {hint && <div style={{ fontSize: 12.5, color: T.textLight }}>{hint}</div>}
+          </div>
+          {action}
+        </div>
+      );
+    }
+
+    const CAT_ICONS = {
+      Consultation: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
+      Diagnostics: "M3 12h4l2-6 4 12 2-6h6",
+      Procedures: "M14.5 4.5l5 5M4 20l6.5-6.5M9 9l6 6M12.5 6.5l5 5-8 8-5-5z",
+      Medications: "M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7",
+      Supplies: "M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10",
+      Administration: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
+    };
+    function Icon({ d, size = 16, color = "currentColor" }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
+    }
+
+    const HOSPITALS = [
+      "Tier 1 Dublin City Clinic", "Tier 1 Dublin South Clinic", "Tier 1 Cork Clinic",
+      "Tier 1 Galway Clinic", "Tier 1 Limerick Clinic", "Tier 1 Waterford Clinic",
+      "Tier 1 Kilkenny Clinic", "Tier 1 Sligo Clinic", "Tier 1 Athlone Clinic",
+      "Tier 1 Dundalk Clinic", "Tier 1 Tralee Clinic", "Tier 1 Letterkenny Clinic",
+    ];
+
+    const CONSULTANTS = [
+      "Mr James Richardson, Orthopaedics",
+      "Ms Sarah Thompson, Gynaecology",
+      "Dr Akhil Patel, Cardiology",
+      "Mr David Hughes, General Surgery",
+      "Dr Emma Collins, Neurology",
+      "Mr Robert Jenkins, Urology",
+      "Dr Priya Sharma, Oncology",
+      "Ms Claire Davies, ENT",
+      "Dr Michael O'Brien, Gastroenterology",
+      "Mr Andrew Stewart, Ophthalmology",
+      "Dr Helen Carter, Dermatology",
+      "Mr William Fraser, Plastic Surgery",
+      "Dr Nadia Khan, Rheumatology",
+      "Ms Rebecca Taylor, Breast Surgery",
+      "Dr Simon Lewis, Respiratory Medicine",
+    ];
+
+    // Prices in EUR. Outpatient medical services are VAT exempt
+    const SERVICES = [
+      { id: "cons_init", name: "Initial Consultation", category: "Consultation", price: 250 },
+      { id: "cons_follow", name: "Follow-up Consultation", category: "Consultation", price: 180 },
+      { id: "cons_virtual", name: "Virtual Consultation", category: "Consultation", price: 150 },
+      { id: "cons_second", name: "Second Opinion", category: "Consultation", price: 300 },
+      { id: "diag_blood", name: "Blood Tests (Standard)", category: "Diagnostics", price: 110 },
+      { id: "diag_blood_adv", name: "Blood Tests (Advanced)", category: "Diagnostics", price: 260 },
+      { id: "diag_xray", name: "X-Ray", category: "Diagnostics", price: 140 },
+      { id: "diag_ultrasound", name: "Ultrasound Scan", category: "Diagnostics", price: 220 },
+      { id: "diag_mri", name: "MRI Scan", category: "Diagnostics", price: 450 },
+      { id: "diag_ct", name: "CT Scan", category: "Diagnostics", price: 380 },
+      { id: "diag_ecg", name: "ECG", category: "Diagnostics", price: 90 },
+      { id: "diag_echo", name: "Echocardiogram", category: "Diagnostics", price: 320 },
+      { id: "diag_endoscopy", name: "Endoscopy", category: "Diagnostics", price: 1150 },
+      { id: "proc_inject", name: "Joint / Soft Tissue Injection", category: "Procedures", price: 320 },
+      { id: "proc_biopsy", name: "Biopsy (Minor)", category: "Procedures", price: 600 },
+      { id: "proc_dressing", name: "Wound Dressing", category: "Procedures", price: 75 },
+      { id: "proc_cast", name: "Cast Application / Removal", category: "Procedures", price: 165 },
+      { id: "proc_physio", name: "Physiotherapy Session", category: "Procedures", price: 70 },
+      { id: "med_prescribe", name: "Prescription (per item)", category: "Medications", price: 15 },
+      { id: "med_iv", name: "IV Infusion Administration", category: "Medications", price: 120 },
+      { id: "sup_surgical", name: "Surgical Consumables", category: "Supplies", price: 45 },
+      { id: "sup_splint", name: "Splint / Support", category: "Supplies", price: 60 },
+      { id: "adm_letter", name: "Medical Report / Letter", category: "Administration", price: 90 },
+      { id: "adm_records", name: "Medical Records Copy", category: "Administration", price: 45 },
+    ];
+
+    const PAYMENT_METHODS = ["Self-Pay", "Private Health Insurance", "HSE Funded", "Corporate / Employer", "Embassy / Sponsor"];
+    const CATEGORIES = [...new Set(SERVICES.map(s => s.category))];
+    function getService(id) { return SERVICES.find(s => s.id === id); }
+
+    // One-click sample data for live demos
+    const SAMPLE_PATIENT = {
+      name: "Aoife Brennan", dob: "1984-03-14", nhsNumber: "MRN 0048215", insurerName: "Laya Healthcare", policyNumber: "LH-7720-1934",
+      hospital: "Tier 1 Dublin City Clinic", consultant: "Mr James Richardson, Orthopaedics", paymentMethod: "Private Health Insurance",
+      notes: "Right knee pain following a fall in September. MRI requested to rule out meniscal tear. Review in clinic in four weeks.",
+    };
+    const SAMPLE_CHARGES = ["cons_init", "diag_xray", "diag_mri", "proc_inject", "sup_splint"];
+
+    function App() {
+      const [patient, setPatient] = useState({ name: "", dob: "", nhsNumber: "", insurerName: "", policyNumber: "", hospital: HOSPITALS[0], consultant: "", specialty: "", visitDate: todayISO(), paymentMethod: PAYMENT_METHODS[0], notes: "" });
+      const [charges, setCharges] = useState([]);
+      const [ref] = useState(() => "CS-" + todayISO().replace(/-/g, "") + "-" + String(Math.floor(1000 + Math.random() * 9000)));
+      const chargesheetRef = useRef(null);
+
+      // Conga
+      const [generatingDoc, setGeneratingDoc] = useState(false);
+      const [apiSteps, setApiSteps] = useState([]);
+      const [showTech, setShowTech] = useState(false);
+      const [downloadUrl, setDownloadUrl] = useState(null);
+      const [downloadFileName, setDownloadFileName] = useState(null);
+      const [lastToken, setLastToken] = useState(null);
+
+      function addCharge(serviceId) {
+        const svc = getService(serviceId);
+        if (!svc) return;
+        setCharges(p => [...p, { id: uid(), serviceId, qty: 1, unitPrice: svc.price, notes: "" }]);
+      }
+      function updateCharge(id, f, v) { setCharges(p => p.map(c => c.id === id ? { ...c, [f]: v } : c)); }
+      function removeCharge(id) { setCharges(p => p.filter(c => c.id !== id)); }
+      function loadSample() {
+        setPatient(p => ({ ...p, ...SAMPLE_PATIENT, visitDate: todayISO() }));
+        setCharges(SAMPLE_CHARGES.map(id => ({ id: uid(), serviceId: id, qty: 1, unitPrice: getService(id).price, notes: "" })));
+        setApiSteps([]); setDownloadUrl(null);
+      }
+
+      const subtotal = charges.reduce((s, c) => s + Number(c.qty) * Number(c.unitPrice), 0);
+      const grandTotal = subtotal;
+      const [consultantName, specialty] = patient.consultant ? patient.consultant.split(", ") : ["", ""];
+      const insured = patient.paymentMethod === "Private Health Insurance";
+
+      const chargesheetJSON = JSON.stringify({
+        chargesheetRef: ref,
+        patientName: or(patient.name, "Not provided"),
+        patientDob: or(longDate(patient.dob), "Not provided"),
+        patientNhsNumber: or(patient.nhsNumber, "Not provided"),
+        patientInsurerName: or(patient.insurerName, insured ? "Not provided" : "Not applicable"),
+        patientPolicyNumber: or(patient.policyNumber, insured ? "Not provided" : "Not applicable"),
+        patientHospital: patient.hospital,
+        patientConsultant: or(consultantName, "Not assigned"),
+        patientSpecialty: or(specialty, "Not assigned"),
+        patientVisitDate: longDate(patient.visitDate),
+        patientPaymentMethod: patient.paymentMethod,
+        patientNotes: or(patient.notes, "No clinical notes recorded."),
+        charges: charges.map(c => {
+          const svc = getService(c.serviceId);
+          const lt = Number(c.qty) * Number(c.unitPrice);
+          return { name: svc?.name, category: svc?.category, qty: c.qty, unitPrice: fmt(Number(c.unitPrice)), lineTotal: fmt(lt), notes: c.notes };
+        }),
+        summary: [{ total: fmt(grandTotal), itemCount: charges.length }],
+        currency: "EUR",
+        generatedAt: longDate(todayISO()),
+      }, null, 2);
+
+      // Conga helpers
+      function addStep(s) { setApiSteps(p => [...p, { ...s, ts: new Date().toISOString() }]); }
+      function updLast(u) { setApiSteps(p => { const c = [...p]; c[c.length-1] = { ...c[c.length-1], ...u }; return c; }); }
+
+      async function handleGenerateDoc() {
+        if (!CONGA_AUTH_URL) { alert("Set Conga API credentials in source code."); return; }
+        setGeneratingDoc(true); setApiSteps([]); setDownloadUrl(null); setDownloadFileName(null);
+        let token = null, corrId = null;
+        addStep({ step:1, name:"Authenticate", method:"POST", url:CONGA_AUTH_URL, status:"pending", resp:null });
+        try {
+          const b = new URLSearchParams(); b.append("grant_type","client_credentials"); b.append("client_id",CONGA_CLIENT_ID); b.append("client_secret",CONGA_CLIENT_SECRET);
+          const r = await fetch(CONGA_AUTH_URL, { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:b.toString() });
+          const d = await r.json().catch(()=>null);
+          if (r.ok && d?.access_token) { token=d.access_token; setLastToken(token); updLast({status:"success",resp:"Token received"}); }
+          else { updLast({status:"error",resp:JSON.stringify(d)}); setGeneratingDoc(false); return; }
+        } catch(e) { updLast({status:"error",resp:e.message}); setGeneratingDoc(false); return; }
+        const payload = { output:{generateDocumentDownload:true}, legacyOptions:{DefaultPdf:"1",OFN:"Chargesheet - "+(patient.name||"Patient")}, TemplateSources:[{IntegrationName:"conga",fileId:CONGA_TEMPLATE_FILE_ID}], Destinations:[{IntegrationName:"conga",folderId:CONGA_DEST_FOLDER}], Locale:"en-US", JsonData:chargesheetJSON };
+        addStep({ step:2, name:"Send Merge", method:"POST", url:CONGA_MERGE_URL, status:"pending", resp:null });
+        try {
+          const r = await fetch(CONGA_MERGE_URL, { method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}, body:JSON.stringify(payload) });
+          const d = await r.json().catch(()=>null);
+          if (r.ok && d?.correlationId) { corrId=d.correlationId; updLast({status:"success",resp:"correlationId: "+corrId}); }
+          else { updLast({status:"error",resp:JSON.stringify(d)}); setGeneratingDoc(false); return; }
+        } catch(e) { updLast({status:"error",resp:e.message}); setGeneratingDoc(false); return; }
+        addStep({ step:3, name:"Poll Status", method:"GET", url:CONGA_STATUS_URL+"/"+corrId, status:"pending", resp:null });
+        let done=false;
+        for(let i=0;i<10;i++){
+          await new Promise(r=>setTimeout(r,i===0?2000:3000));
+          try{
+            const r=await fetch(CONGA_STATUS_URL+"/"+corrId,{headers:{"Authorization":"Bearer "+token,"showDetails":"true"}});
+            const d=await r.json().catch(()=>null);
+            if(r.ok&&d?.message==="Completed"){updLast({status:"success",resp:"Completed"});done=true;break;}
+            else if(r.ok)updLast({status:"pending",resp:"Polling #"+(i+1)});
+            else{updLast({status:"error",resp:JSON.stringify(d)});break;}
+          }catch(e){updLast({status:"error",resp:e.message});break;}
+        }
+        if(!done){
+          setApiSteps(p=>{const c=[...p];const l=c[c.length-1];c[c.length-1]={...l,status:l.status==="pending"?"error":l.status,resp:(l.resp||"")+" Timed out."};return c;});
+          setGeneratingDoc(false);return;
+        }
+        addStep({ step:4, name:"Get Download", method:"GET", url:CONGA_PRESIGNED_URL+"/"+corrId, status:"pending", resp:null });
+        try{
+          const r=await fetch(CONGA_PRESIGNED_URL+"/"+corrId,{headers:{"Authorization":"Bearer "+token}});
+          const d=await r.json().catch(()=>null);
+          let url=null,fn=null;
+          if(d?.preSignedCreateResponseModel?.fileInfoDetailsList?.length>0){url=d.preSignedCreateResponseModel.fileInfoDetailsList[0].url;fn=d.preSignedCreateResponseModel.fileInfoDetailsList[0].fileName;}
+          if(r.ok&&url){setDownloadUrl(url);setDownloadFileName(fn||"Chargesheet.pdf");updLast({status:"success",resp:"Ready"});}
+          else updLast({status:"success",resp:"Check response"});
+        }catch(e){updLast({status:"error",resp:e.message});}
+        setGeneratingDoc(false);
+      }
+
+      function handleDownload() {
+        if(!downloadUrl||!lastToken)return;
+        fetch(downloadUrl,{headers:{"Authorization":"Bearer "+lastToken}})
+          .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.blob();})
+          .then(bl=>{const b=new Blob([bl],{type:bl.type||"application/pdf"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=downloadFileName||"Chargesheet.pdf";document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),1000);})
+          .catch(e=>alert("Download failed: "+e.message));
+      }
+
+      const ALL_STEPS = ["Authenticate", "Send Merge", "Poll Status", "Get Download"];
+      const progress = [
+        { label: "Patient & visit", done: !!patient.name },
+        { label: "Services", done: charges.length > 0 },
+        { label: "Document", done: !!downloadUrl },
+      ];
+
+      return (
+        <div style={{ minHeight: "100vh", background: T.mint }}>
+
+          {/* HEADER */}
+          <header style={{ background: T.white, borderBottom: `1px solid ${T.border}`, position: "sticky", top: 0, zIndex: 100 }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                <Tier1Logo size={26} sub="HEALTHCARE" />
+                <div className="hdr-sub" style={{ width: 1, height: 32, background: T.border }} />
+                <div className="hdr-sub">
+                  <div style={{ fontSize: 14, fontWeight: 700, color: T.navyDeep, lineHeight: 1.2 }}>Outpatient Chargesheet</div>
+                  <div style={{ fontSize: 11.5, color: T.textLight }}>Ref. {ref}</div>
+                </div>
+              </div>
+              {charges.length > 0 && (
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                  <span style={{ fontSize: 12.5, color: T.textLight }}>{charges.length} item{charges.length !== 1 ? "s" : ""}</span>
+                  <span className="num" style={{ fontSize: 17, fontWeight: 800, color: T.navyDeep }}>{fmt(grandTotal)}</span>
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* HERO */}
+          <section style={{ background: T.navyDeep, color: "#fff", borderBottom: `3px solid ${T.green}` }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px 84px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: T.greenBright, marginBottom: 12 }}>Tier 1 Healthcare</div>
+                <h1 style={{ fontSize: "clamp(26px, 3.6vw, 36px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.02em" }}>Outpatient Chargesheet</h1>
+                <p style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", marginTop: 10, maxWidth: 520 }}>Record the patient and visit, add the services provided, then generate the chargesheet as a PDF.</p>
+              </div>
+              <div className="hero-stats" style={{ display: "flex", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 12 }}>
+                {progress.map((p, i) => (
+                  <div key={i} style={{ padding: "11px 18px", minWidth: 132, borderLeft: i ? "1px solid rgba(255,255,255,0.14)" : "none" }}>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>Step {i + 1}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 7, color: p.done ? "#fff" : "rgba(255,255,255,0.6)" }}>
+                      <span style={{ width: 7, height: 7, borderRadius: 9, background: p.done ? T.greenBright : "transparent", border: `1.5px solid ${p.done ? T.greenBright : "rgba(255,255,255,0.35)"}` }} />{p.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <div style={{ maxWidth: 1200, margin: "-52px auto 0", padding: "0 24px 64px", position: "relative" }}>
+
+            {/* ROW 1: Patient + Visit side by side */}
+            <div className="g2" style={{ marginBottom: 20 }}>
+              {/* Patient */}
+              <div style={card}>
+                <SectionTitle n="1" title="Patient details" hint="Who is being billed"
+                  action={<button className="link" onClick={loadSample} style={{ border: "none", background: "none", padding: 0, fontSize: 12.5, fontWeight: 600, color: T.greenDeep, cursor: "pointer", whiteSpace: "nowrap" }}>Use sample patient</button>} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Patient name</label><input value={patient.name} onChange={e=>setPatient(p=>({...p,name:e.target.value}))} placeholder="Full name" style={inp} /></div>
+                  <div><label style={lbl}>Date of birth</label><input type="date" value={patient.dob} onChange={e=>setPatient(p=>({...p,dob:e.target.value}))} style={inp} /></div>
+                  <div><label style={lbl}>Hospital no. (MRN)</label><input value={patient.nhsNumber} onChange={e=>setPatient(p=>({...p,nhsNumber:e.target.value}))} placeholder="Optional" style={inp} /></div>
+                  <div><label style={lbl}>Insurer</label><input value={patient.insurerName} onChange={e=>setPatient(p=>({...p,insurerName:e.target.value}))} placeholder="VHI, Laya, Irish Life Health" style={inp} /></div>
+                  <div><label style={lbl}>Policy number</label><input value={patient.policyNumber} onChange={e=>setPatient(p=>({...p,policyNumber:e.target.value}))} placeholder="Policy or membership no." style={inp} /></div>
+                </div>
+              </div>
+
+              {/* Visit */}
+              <div style={card}>
+                <SectionTitle n="2" title="Visit details" hint="Where and with whom" />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Clinic</label>
+                    <select value={patient.hospital} onChange={e=>setPatient(p=>({...p,hospital:e.target.value}))} style={inp}>
+                      {HOSPITALS.map(h=><option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={lbl}>Visit date</label><input type="date" value={patient.visitDate} onChange={e=>setPatient(p=>({...p,visitDate:e.target.value}))} style={inp} /></div>
+                  <div><label style={lbl}>Payment method</label>
+                    <select value={patient.paymentMethod} onChange={e=>setPatient(p=>({...p,paymentMethod:e.target.value}))} style={inp}>
+                      {PAYMENT_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Consultant</label>
+                    <select value={patient.consultant} onChange={e=>setPatient(p=>({...p,consultant:e.target.value}))} style={inp}>
+                      <option value="">Select consultant</option>
+                      {CONSULTANTS.map(c=><option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Clinical notes</label><textarea value={patient.notes} onChange={e=>setPatient(p=>({...p,notes:e.target.value}))} placeholder="Reason for visit, findings, follow-up" rows={2} style={{ ...inp, resize: "vertical" }} /></div>
+                </div>
+              </div>
+            </div>
+
+            {/* ROW 2: Add Services */}
+            <div style={{ ...card, marginBottom: 20 }}>
+              <SectionTitle n="3" title="Add services" hint="Select a service to add it as a line item. Prices in euro." />
+              <div className="svc-grid">
+                {CATEGORIES.map(cat => (
+                  <div key={cat}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+                      <Icon d={CAT_ICONS[cat]} size={15} color={T.navy} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: T.navyDeep }}>{cat}</span>
+                      <span className="num" style={{ marginLeft: "auto", fontSize: 11.5, color: T.textLight }}>{SERVICES.filter(s => s.category === cat).length}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {SERVICES.filter(s => s.category === cat).map(s => {
+                        const count = charges.filter(c => c.serviceId === s.id).length;
+                        const isAdded = count > 0;
+                        return (
+                          <button key={s.id} className={"svc-btn" + (isAdded ? " on" : "")} onClick={() => addCharge(s.id)} style={{ padding: "8px 11px", background: isAdded ? T.greenSoft : T.white, border: `1px solid ${isAdded ? "#BFDDB5" : T.border}`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 500, color: T.text, textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10.5, fontWeight: 700, background: isAdded ? T.green : "transparent", border: `1px solid ${isAdded ? T.green : "#C9D6D0"}`, color: "#fff" }}>{isAdded ? (count > 1 ? count : "✓") : ""}</span>
+                              {s.name}
+                            </span>
+                            <span className="num" style={{ color: T.textLight, fontWeight: 600, whiteSpace: "nowrap", fontSize: 12.5 }}>{fmt(s.price)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ROW 3: Itemised Charges + Totals */}
+            {charges.length > 0 && (
+              <div style={{ ...card, marginBottom: 20, padding: 0, overflow: "hidden" }} ref={chargesheetRef}>
+                <div style={{ padding: "22px 26px 4px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                  <SectionTitle n="4" title="Chargesheet" hint="Adjust quantities or unit prices inline" />
+                  <div style={{ fontSize: 12.5, color: T.textLight, marginBottom: 18, textAlign: "right", lineHeight: 1.5 }}>
+                    <div style={{ fontWeight: 700, color: T.navyDeep }}>{patient.name || "Patient name not entered"}</div>
+                    <div>{patient.hospital} · {longDate(patient.visitDate)}</div>
+                  </div>
+                </div>
+
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+                    <thead><tr style={{ background: T.bgAlt, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                      {["Service", "Category", "Qty", "Unit price (€)", "Amount", ""].map((h, i) => (
+                        <th key={i} style={{ padding: "10px 16px", textAlign: i >= 2 && i <= 4 ? "right" : "left", color: T.textLight, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {charges.map((c) => {
+                        const svc = getService(c.serviceId);
+                        const lt = Number(c.qty) * Number(c.unitPrice);
+                        return (
+                          <tr key={c.id} className="row-in" style={{ borderBottom: `1px solid ${T.border}` }}>
+                            <td style={{ padding: "9px 16px", fontWeight: 600, color: T.navyDeep }}>{svc?.name}</td>
+                            <td style={{ padding: "9px 16px", color: T.textLight, fontSize: 12.5 }}>{svc?.category}</td>
+                            <td style={{ padding: "9px 16px", textAlign: "right" }}>
+                              <input type="number" min={1} value={c.qty} onChange={e => updateCharge(c.id, "qty", e.target.value)} className="num" style={{ ...cellInp, width: 60, textAlign: "center" }} aria-label="Quantity" />
+                            </td>
+                            <td style={{ padding: "9px 16px", textAlign: "right" }}>
+                              <input type="number" min={0} step="0.01" value={c.unitPrice} onChange={e => updateCharge(c.id, "unitPrice", e.target.value)} className="num" style={{ ...cellInp, width: 96, textAlign: "right" }} aria-label="Unit price in euro" />
+                            </td>
+                            <td className="num" style={{ padding: "9px 16px", textAlign: "right", fontWeight: 700, color: T.navyDeep, whiteSpace: "nowrap" }}>{fmt(lt)}</td>
+                            <td style={{ padding: "9px 16px", width: 48 }}><button className="rm" onClick={() => removeCharge(c.id)} title="Remove line" aria-label="Remove line" style={{ width: 28, height: 28, border: `1px solid ${T.border}`, borderRadius: 7, background: T.white, cursor: "pointer", fontSize: 14, lineHeight: 1, color: T.textLight, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: T.navyDeep, color: "#fff" }}>
+                        <td colSpan={4} style={{ padding: "15px 16px", fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>Total payable <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, color: "rgba(255,255,255,0.55)", marginLeft: 8 }}>VAT exempt</span></td>
+                        <td colSpan={2} className="num" style={{ padding: "15px 16px", textAlign: "right", fontWeight: 800, fontSize: 21, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>{fmt(grandTotal)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ROW 4: Generate Document */}
+            {charges.length > 0 && (
+              <div style={{ ...card, background: T.navyDeep, border: "none", color: "#fff" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 700 }}>Generate chargesheet PDF</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Merges this visit into the Tier 1 chargesheet template with Conga Composer</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    {downloadUrl && (
+                      <button onClick={handleDownload} style={{ ...btnG, background: "#fff", color: T.navyDeep }}>Download PDF</button>
+                    )}
+                    <button className="primary" onClick={handleGenerateDoc} disabled={generatingDoc} style={{ ...btnG, opacity: generatingDoc ? 0.75 : 1, cursor: generatingDoc ? "wait" : "pointer" }}>
+                      {generatingDoc ? <span className="pulse">Generating…</span> : apiSteps.length > 0 ? "Generate again" : "Generate PDF"}
+                    </button>
+                  </div>
+                </div>
+
+                {apiSteps.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.5)" }}>Conga API pipeline</span>
+                      <label style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                        <input type="checkbox" checked={showTech} onChange={e => setShowTech(e.target.checked)} style={{ accentColor: T.greenBright }} /> Technical details
+                      </label>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 }}>
+                      {ALL_STEPS.map((name, i) => {
+                        const s = apiSteps[i];
+                        const st = s ? s.status : "idle";
+                        const col = st === "success" ? T.greenBright : st === "error" ? "#FF8A8A" : st === "pending" ? "#FFD166" : "rgba(255,255,255,0.3)";
+                        return (
+                          <div key={i} style={{ border: `1px solid ${st === "idle" ? "rgba(255,255,255,0.1)" : col + "55"}`, borderRadius: 10, padding: "11px 13px", fontSize: 13 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span className={st === "pending" ? "pulse" : ""} style={{ width: 22, height: 22, borderRadius: 999, background: st === "idle" ? "transparent" : col, border: `1.5px solid ${col}`, color: T.navyDeep, fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>{st === "success" ? "✓" : st === "error" ? "!" : i + 1}</span>
+                              <span style={{ fontWeight: 600, opacity: st === "idle" ? 0.5 : 1 }}>{name}</span>
+                              <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 600, textTransform: "capitalize", color: col }}>{st === "idle" ? "" : st}</span>
+                            </div>
+                            {showTech && s && <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.55)", marginTop: 8, wordBreak: "break-all", fontFamily: "ui-monospace, monospace" }}>{s.method} {s.url} | Response: {s.resp || "..."}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {charges.length === 0 && (
+              <div style={{ ...card, textAlign: "center", padding: "48px 28px", border: `1px dashed #C9D6D0`, background: "transparent" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.navyDeep }}>No services added yet</div>
+                <div style={{ fontSize: 13, marginTop: 4, color: T.textLight }}>Select a service above and it will appear here as a line item.</div>
+              </div>
+            )}
+          </div>
+
+          {/* FOOTER */}
+          <footer style={{ background: T.ink, color: "#fff", padding: "32px 24px" }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 18 }}>
+              <Tier1Logo size={22} light sub="HEALTHCARE" />
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", textAlign: "right" }}>© {new Date().getFullYear()} Tier 1 Systems. Outpatient chargesheet demo, prices in EUR.<br />Document generation by Conga Composer.</div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
